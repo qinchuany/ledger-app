@@ -765,11 +765,16 @@ function getCategoryExpense(monthStr){
   return map;
 }
 function getGoalSaved(goal){
-  const months = Math.max(0, monthsBetween(goal.startDate, new Date()));
-  let saved = Number(goal.adjustment||0) + goal.monthlySaving*months;
-  // 关联该目标的 income 流水
+  // 已存 = 手动调整 + 关联此目标的收入流水累计（不重复计算月存×月数）
+  // 月存仅用于 ETA 预估，避免与实际流水叠加导致重复
+  let saved = Number(goal.adjustment||0);
   DB.transactions.filter(t=>t.goalId===goal.id && t.type==='income').forEach(t=>{ saved+=Number(t.amount); });
   return saved;
+}
+function getGoalExpectedSaved(goal){
+  // 预期已存（按月存×月数推算，用于对比"应存"进度）
+  const months = Math.max(0, monthsBetween(goal.startDate, new Date()));
+  return Number(goal.adjustment||0) + goal.monthlySaving*months;
 }
 function getGoalProgress(goal){
   const saved=getGoalSaved(goal);
@@ -777,12 +782,28 @@ function getGoalProgress(goal){
   return Math.min(100, saved/goal.targetAmount*100);
 }
 function getGoalETA(goal){
-  if(goal.monthlySaving<=0) return null;
+  if(goal.monthlySaving<=0){
+    // 没设月存，按最近3个月平均关联收入推算
+    const related=DB.transactions.filter(t=>t.goalId===goal.id && t.type==='income');
+    if(related.length===0) return null;
+    const saved=getGoalSaved(goal);
+    const remain=goal.targetAmount-saved;
+    if(remain<=0) return '已达成';
+    // 按最近3个月平均
+    const recent=related.filter(t=>{
+      const d=new Date(t.date); const diff=(Date.now()-d.getTime())/86400000;
+      return diff<=90;
+    });
+    const avg = recent.length>0 ? recent.reduce((s,t)=>s+Number(t.amount),0)/3 : 0;
+    if(avg<=0) return null;
+    const months=Math.ceil(remain/avg);
+    return fmtDate(addMonths(new Date(), months));
+  }
   const saved=getGoalSaved(goal);
   const remain=goal.targetAmount-saved;
   if(remain<=0) return '已达成';
   const months=Math.ceil(remain/goal.monthlySaving);
-  return fmtDate(addMonths(goal.startDate, months));
+  return fmtDate(addMonths(new Date(), months));
 }
 
 /* ========================================================
@@ -882,14 +903,18 @@ function renderDashboard(){
     <div class="card">
       <div class="card-title">🎯 长期目标进度 ${goals.length?`<button class="btn btn-sm" onclick="navigate('goals')">查看全部</button>`:''}</div>
       ${goals.length?goals.map(g=>{
-        const saved=getGoalSaved(g), prog=getGoalProgress(g), eta=getGoalETA(g);
-        return `<div style="margin-bottom:14px">
+        const saved=getGoalSaved(g), expected=getGoalExpectedSaved(g), prog=getGoalProgress(g), eta=getGoalETA(g);
+        const diff = saved - expected;
+        return `<div style="margin-bottom:16px">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:13px">
             <span><strong>${g.name}</strong> <span class="horizon-tag h${g.horizon}" style="font-size:10px">${g.horizon}年</span></span>
             <span style="color:var(--ink-3)">${fmt(saved)} / ${fmt(g.targetAmount)} · ${prog.toFixed(1)}%</span>
           </div>
           <div class="progress"><div class="progress-bar ${prog>=100?'':'warn'}" style="width:${Math.min(prog,100)}%"></div></div>
-          ${eta?`<div style="font-size:12px;color:var(--ink-3);margin-top:4px">预计达成：${eta}</div>`:''}
+          <div style="font-size:12px;color:var(--ink-3);margin-top:4px;display:flex;justify-content:space-between">
+            <span>预计达成：${eta||'未设定'}</span>
+            ${expected>0?`<span style="color:${diff>=0?'var(--green)':'var(--orange)'}">${diff>=0?'超前':'落后'} ${fmt(Math.abs(diff))}</span>`:''}
+          </div>
         </div>`;
       }).join(''):`<div class="empty"><div class="emoji">🎯</div><div class="text">还没有长期目标，<a href="#" onclick="navigate('goals');return false">去创建一个</a></div></div>`}
     </div>
@@ -966,10 +991,11 @@ function renderTransactions(){
           </div>
           <div class="form-field" style="flex:0 0 160px">
             <label>关联目标</label>
-            <select id="tx-goal"><option value="">无</option>${DB.goals.map(g=>`<option value="${g.id}">${g.name}</option>`).join('')}</select>
+            <select id="tx-goal" onchange="updateGoalHint()"><option value="">无</option>${DB.goals.map(g=>`<option value="${g.id}">${g.name}</option>`).join('')}</select>
           </div>
           <button type="submit" class="btn btn-primary">添加</button>
         </div>
+        <div id="goal-hint" style="font-size:12px;color:var(--mint);margin-top:8px;display:none;font-weight:600"></div>
       </form>
     </div>
 
@@ -1003,6 +1029,26 @@ function toggleTxCategory(){
   if(!sel) return;
   const cats = type==='income' ? ['工资','理财收益','其他'] : CATEGORIES;
   sel.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  updateGoalHint();
+}
+function updateGoalHint(){
+  const sel=document.getElementById('tx-goal');
+  const hint=document.getElementById('goal-hint');
+  const type=document.getElementById('tx-type');
+  if(!sel||!hint) return;
+  const goalId=sel.value;
+  if(!goalId){ hint.style.display='none'; return; }
+  const g=DB.goals.find(x=>x.id===goalId);
+  if(!g){ hint.style.display='none'; return; }
+  if(type && type.value==='expense'){
+    hint.style.display='block';
+    hint.style.color='var(--ink-3)';
+    hint.textContent=`📌 支出不会计入「${g.name}」的已存金额（仅收入类流水会计入）`;
+  }else{
+    hint.style.display='block';
+    hint.style.color='var(--mint)';
+    hint.textContent=`📌 此笔收入将计入「${g.name}」的已存金额（当前已存 ${fmt(getGoalSaved(g))}）`;
+  }
 }
 function getFilteredTx(){
   return DB.transactions.filter(t=>{
@@ -1037,7 +1083,7 @@ function renderTxList(){
             <td>${t.category}</td>
             <td class="amount ${t.type}">${fmtSigned(t.type==='expense'?-Math.abs(t.amount):t.amount)}</td>
             <td>${t.note||'—'}</td>
-            <td>${goal?goal.name:'—'}</td>
+            <td>${goal?`<span class="tag" style="background:var(--mint-bg);color:var(--mint)">🎯 ${goal.name}</span>`:'—'}</td>
             <td style="text-align:right;white-space:nowrap">
               <button class="btn btn-sm" onclick="editTransaction('${t.id}')">编辑</button>
               <button class="btn btn-sm btn-danger" onclick="deleteTransaction('${t.id}')">删除</button>
@@ -1076,7 +1122,13 @@ function addTransaction(e){
   document.getElementById('tx-amount').value='';
   document.getElementById('tx-note').value='';
   renderTxList();
-  toast('已添加一笔记录');
+  if(tx.goalId && tx.type==='income'){
+    const g=DB.goals.find(x=>x.id===tx.goalId);
+    if(g) toast(`已计入「${g.name}」· 已存 ${fmt(getGoalSaved(g))}`);
+    else toast('已添加一笔记录');
+  }else{
+    toast('已添加一笔记录');
+  }
 }
 function editTransaction(id){
   const t=DB.transactions.find(x=>x.id===id);
@@ -1150,24 +1202,26 @@ function getDailyData(monthStr){
   // 按日期聚合当月每天的收支
   const [y,m] = monthStr.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
-  const map = {}; // date -> {income, expense, count, categories:{}}
+  const map = {}; // date -> {income, expense, count, categories:{}, goalSaving}
   DB.transactions.filter(t=>t.date.startsWith(monthStr)).forEach(t=>{
-    if(!map[t.date]) map[t.date] = { date:t.date, income:0, expense:0, count:0, cats:{} };
+    if(!map[t.date]) map[t.date] = { date:t.date, income:0, expense:0, count:0, cats:{}, goalSaving:0 };
     const d = map[t.date];
     d.count++;
-    if(t.type==='income') d.income += Number(t.amount);
-    else {
+    if(t.type==='income'){
+      d.income += Number(t.amount);
+      if(t.goalId) d.goalSaving += Number(t.amount);
+    } else {
       d.expense += Number(t.amount);
       d.cats[t.category] = (d.cats[t.category]||0) + Number(t.amount);
     }
   });
-  // 转数组并补全无流水的日期为 null（仅返回有数据的日期，倒序）
   return Object.values(map).sort((a,b)=>b.date.localeCompare(a.date));
 }
 function renderDaily(){
   const dailyData = getDailyData(currentMonth);
   const totalIn = dailyData.reduce((s,d)=>s+d.income,0);
   const totalOut = dailyData.reduce((s,d)=>s+d.expense,0);
+  const totalGoalSaving = dailyData.reduce((s,d)=>s+d.goalSaving,0);
   const activeDays = dailyData.filter(d=>d.count>0).length;
   const [y,m] = currentMonth.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
@@ -1182,6 +1236,8 @@ function renderDaily(){
   const topCat = Object.entries(allCats).sort((a,b)=>b[1]-a[1])[0];
   // 每日最大值（用于条形图归一化）
   const maxBar = Math.max(1, ...dailyData.map(d=>Math.max(d.income,d.expense)));
+  // 储蓄率
+  const savingRate = totalIn>0 ? ((totalIn-totalOut)/totalIn*100) : 0;
 
   // 生成洞察
   const insights = [];
@@ -1198,7 +1254,10 @@ function renderDaily(){
   }
   if(totalIn>0 && totalOut>0){
     const ratio = (totalOut/totalIn*100).toFixed(0);
-    insights.push(`本月支出占收入的 <strong>${ratio}%</strong>，${ratio>100?'<span style="color:var(--red);font-weight:700">支出已超过收入，建议控制</span>':ratio>80?'<span style="color:var(--orange);font-weight:700">支出偏高，注意节流</span>':'储蓄率健康，继续保持'}。`);
+    insights.push(`本月支出占收入的 <strong>${ratio}%</strong>，${ratio>100?'<span style="color:var(--red);font-weight:700">支出已超过收入，建议控制</span>':ratio>80?'<span style="color:var(--orange);font-weight:700">支出偏高，注意节流</span>':'<span style="color:var(--green);font-weight:700">储蓄率健康，继续保持</span>'}。`);
+  }
+  if(totalGoalSaving>0){
+    insights.push(`本月已向长期目标存入 <strong>${fmt(totalGoalSaving)}</strong>，${savingRate>=20?'存钱节奏不错':'建议提高储蓄比例'}。`);
   }
 
   document.getElementById('view').innerHTML = `
@@ -1223,6 +1282,11 @@ function renderDaily(){
         <div class="val" style="color:var(--blue)">${topCat?topCat[0]:'—'}</div>
         <div class="sub">${topCat?fmt(topCat[1]):'暂无数据'}</div>
       </div>
+      ${totalGoalSaving>0?`<div class="daily-stat">
+        <div class="label">🎯 本月目标存入</div>
+        <div class="val" style="color:var(--mint)">${fmt(totalGoalSaving)}</div>
+        <div class="sub">储蓄率 ${savingRate.toFixed(0)}%</div>
+      </div>`:''}
     </div>
 
     ${insights.length?`<div class="insight-card">
@@ -1512,9 +1576,13 @@ function renderGoalGrid(){
   const grid=document.getElementById('goal-grid');
   grid.innerHTML=DB.goals.map(g=>{
     const saved=getGoalSaved(g);
+    const expected=getGoalExpectedSaved(g);
     const prog=getGoalProgress(g);
     const eta=getGoalETA(g);
     const months = Math.max(0, monthsBetween(g.startDate, new Date()));
+    const relatedCount = DB.transactions.filter(t=>t.goalId===g.id && t.type==='income').length;
+    const diff = saved - expected;
+    const diffText = expected>0 ? (diff>=0 ? `超前 ${fmt(diff)}` : `落后 ${fmt(Math.abs(diff))}`) : '';
     return `<div class="goal-card h${g.horizon}">
       <div class="header">
         <div class="name">${g.name}</div>
@@ -1531,6 +1599,8 @@ function renderGoalGrid(){
         <span>💰 月存 ${fmt(g.monthlySaving)}</span>
         <span>⏱ ${eta?('预计 '+eta):'未设定月存'}</span>
         <span>⏳ 已坚持 ${months} 个月</span>
+        <span>📝 已记 ${relatedCount} 笔</span>
+        ${diffText?`<span style="color:${diff>=0?'var(--green)':'var(--orange)'};font-weight:600">${diffText}</span>`:''}
       </div>
       <div class="goal-actions">
         <button class="btn btn-sm" onclick="editGoal('${g.id}')">编辑</button>
@@ -1559,7 +1629,7 @@ function editGoal(id){
       <div class="form-field"><label>开始日期</label><input type="date" id="g-start" value="${g?g.startDate:todayStr()}"></div>
       <div class="form-field"><label>已存调整 (手动修正)</label><input type="number" id="g-adjust" value="${g?g.adjustment:0}" step="100" placeholder="如已有存款可填"></div>
     </div>
-    <p style="font-size:12px;color:var(--ink-3);margin-top:12px">💡 已存金额 = 手动调整 + 月存 × 已过月数 + 关联此目标的收入流水。可在"账单流水"中记录收入时关联本目标，自动累计储蓄。</p>
+    <p style="font-size:12px;color:var(--ink-3);margin-top:12px;line-height:1.7">💡 <strong>已存金额 = 手动调整 + 关联此目标的收入流水</strong>。<br>在「记账」页记录收入时选择关联本目标，已存金额会自动累加。<br>「月存」仅用于推算预计达成时间，不会重复计入已存。</p>
     <div class="modal-actions">
       <button class="btn" onclick="closeModal()">取消</button>
       <button class="btn btn-primary" onclick="saveGoal('${id||''}')">保存</button>
