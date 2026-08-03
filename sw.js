@@ -1,5 +1,5 @@
 /* Service Worker - 离线缓存 + PWA 安装支持 */
-const CACHE_NAME = 'ledger-app-v4';
+const CACHE_NAME = 'ledger-app-v5';
 const ASSETS = [
   './',
   './index.html',

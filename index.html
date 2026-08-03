@@ -35,7 +35,7 @@
   --ink:#0A0A0F;
   --ink-2:#D1D5DB;
   --ink-3:#9CA3AF;
-  --ink-4:#6B7280;
+  --ink-4:#8B92A0;
   /* 边线 / 背景 - 暗系底 */
   --line:#2A2A3A;
   --line-2:#1A1A26;
@@ -68,7 +68,7 @@ html,body{height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
   background:var(--bg);
-  color:var(--ink);
+  color:#D1D5DB;
   font-size:14px;
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
@@ -111,8 +111,8 @@ a:hover{text-decoration:underline}
 .topbar-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .month-switch{display:flex;align-items:center;gap:2px;background:var(--card);padding:3px;border-radius:9px;box-shadow:var(--shadow);border:1px solid var(--line)}
 .month-switch button{padding:5px 11px;border-radius:6px;color:var(--ink-3);font-size:14px;font-weight:700;transition:all .15s;line-height:1}
-.month-switch button:hover{background:var(--bg-2);color:var(--ink)}
-.month-switch .label{padding:0 8px;font-weight:700;font-size:12.5px;min-width:84px;text-align:center;color:var(--ink)}
+.month-switch button:hover{background:var(--bg-2);color:#F3F4F6}
+.month-switch .label{padding:0 8px;font-weight:700;font-size:12.5px;min-width:84px;text-align:center;color:#F3F4F6}
 
 /* 主内容区 */
 .main{
@@ -295,7 +295,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{padding:12px 14px;text-align:left;font-weight:600;color:var(--ink-3);border-bottom:1px solid var(--line);background:var(--bg-2);white-space:nowrap;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
 th:first-child{border-top-left-radius:var(--radius-sm)}
 th:last-child{border-top-right-radius:var(--radius-sm)}
-td{padding:13px 14px;border-bottom:1px solid var(--line-2)}
+td{padding:13px 14px;border-bottom:1px solid var(--line-2);color:#D1D5DB}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--card-2)}
 td.amount{font-weight:700;font-variant-numeric:tabular-nums}
@@ -410,7 +410,7 @@ td.amount.income{color:var(--red)}
 .plan-task:hover .del{opacity:1}
 .plan-add{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
 .plan-add input[type=text]{flex:1;min-width:150px;padding:10px 13px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card)}
-.plan-add input[type=text]:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(16,185,129,.12)}
+.plan-add input[type=text]:focus{border-color:var(--pink);box-shadow:0 0 0 3px rgba(236,72,153,.15)}
 .plan-add input[type=number]{width:110px;padding:10px 13px;border:1px solid var(--line);border-radius:var(--radius-sm)}
 
 /* ============ 长期目标 ============ */
@@ -451,7 +451,7 @@ td.amount.income{color:var(--red)}
 .horizon-tag.h5{background:var(--amber-bg);color:var(--amber)}
 .horizon-tag.h10{background:var(--pink-bg);color:var(--pink)}
 .goal-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-3);margin:12px 0 6px}
-.goal-meta .saved{color:var(--pink);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
+.goal-meta .saved{color:var(--red);font-weight:800;font-size:15px;font-variant-numeric:tabular-nums}
 .goal-meta .target{font-weight:600;color:var(--ink-2)}
 .goal-eta{
   margin-top:14px;
@@ -528,11 +528,11 @@ td.amount.income{color:var(--red)}
 .day-row .bar-wrap .bar-label{width:40px;color:var(--ink-3);font-weight:600}
 .day-row .bar-wrap .bar-track{flex:1;height:7px;background:var(--bg-2);border-radius:4px;overflow:hidden}
 .day-row .bar-wrap .bar-fill{height:100%;border-radius:4px;transition:width .4s}
-.day-row .bar-wrap .bar-fill.income{background:linear-gradient(90deg,var(--green),#34D399)}
-.day-row .bar-wrap .bar-fill.expense{background:linear-gradient(90deg,var(--red),#F87171)}
+.day-row .bar-wrap .bar-fill.income{background:linear-gradient(90deg,var(--red),#F87171)}
+.day-row .bar-wrap .bar-fill.expense{background:linear-gradient(90deg,var(--green),#34D399)}
 .day-row .bar-wrap .bar-val{min-width:80px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
-.day-row .bar-wrap .bar-val.income{color:var(--green)}
-.day-row .bar-wrap .bar-val.expense{color:var(--red)}
+.day-row .bar-wrap .bar-val.income{color:var(--red)}
+.day-row .bar-wrap .bar-val.expense{color:var(--green)}
 .day-row .net{min-width:90px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums;font-size:14px}
 .day-row.peak{border-color:var(--amber);background:var(--amber-bg)}
 .insight-card{
@@ -1106,9 +1106,9 @@ function renderTxList(){
       </tbody>
     </table></div>
     <div class="summary-row">
-      <div class="item"><span class="label">总收入</span><span class="val" style="color:var(--green)">${fmt(totalIn)}</span></div>
-      <div class="item"><span class="label">总支出</span><span class="val" style="color:var(--red)">${fmt(totalOut)}</span></div>
-      <div class="item"><span class="label">净额</span><span class="val" style="color:${totalIn-totalOut>=0?'var(--green)':'var(--red)'}">${fmt(totalIn-totalOut)}</span></div>
+      <div class="item"><span class="label">总收入</span><span class="val" style="color:var(--red)">${fmt(totalIn)}</span></div>
+      <div class="item"><span class="label">总支出</span><span class="val" style="color:var(--green)">${fmt(totalOut)}</span></div>
+      <div class="item"><span class="label">净额</span><span class="val" style="color:${totalIn-totalOut>=0?'var(--red)':'var(--green)'}">${fmtSignedNoPlus(totalIn-totalOut)}</span></div>
       <div class="item"><span class="label">记录数</span><span class="val">${list.length}</span></div>
     </div>
   `;
@@ -1293,7 +1293,7 @@ function renderDaily(){
       </div>
       <div class="daily-stat">
         <div class="label">💸 日均支出（自然日）</div>
-        <div class="val" style="color:var(--red)">${fmt(avgDaily)}</div>
+        <div class="val" style="color:var(--green)">${fmt(avgDaily)}</div>
         <div class="sub">按 ${dayOfMonth} 天均摊</div>
       </div>
       <div class="daily-stat">
@@ -1345,7 +1345,7 @@ function renderDaily(){
               <div class="bar-wrap"><span class="bar-label">收入</span><div class="bar-track"><div class="bar-fill income" style="width:${inPct}%"></div></div><span class="bar-val income">${d.income>0?fmt(d.income):'—'}</span></div>
               <div class="bar-wrap"><span class="bar-label">支出</span><div class="bar-track"><div class="bar-fill expense" style="width:${outPct}%"></div></div><span class="bar-val expense">${d.expense>0?fmt(d.expense):'—'}</span></div>
             </div>
-            <div class="net" style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(net)}</div>
+            <div class="net" style="color:${net>=0?'var(--red)':'var(--green)'}">${net>=0?'+':'−'}${fmt(Math.abs(net))}</div>
           </a>`;
         }).join('')}
       </div>`:`<div class="empty"><div class="emoji">📅</div><div class="text">本月暂无流水记录，<a href="#" onclick="navigate('transactions');return false">去记一笔</a></div></div>`}
@@ -1415,14 +1415,14 @@ function renderBudget(){
     <div class="budget-hero">
       <div class="label">${monthLabel(currentMonth)} 支出 / 预算</div>
       <div class="amount">${fmt(expense)} <span style="font-size:18px;opacity:.8">/ ${fmt(budget)}</span></div>
-      <div class="sub">剩余 <strong>${fmt(remain)}</strong> · 已用 ${ratio.toFixed(1)}% · <strong style="color:${statusColor==='#FFF'?'#FFE066':statusColor}">${statusText}</strong></div>
+      <div class="sub">剩余 <strong>${fmt(remain)}</strong> · 已用 ${ratio.toFixed(1)}% · <strong style="color:${statusColor}">${statusText}</strong></div>
       <div class="progress"><div class="progress-bar ${barClass}" style="width:${Math.min(ratio,100)}%;background:${ratio>=100?'#FF6B6B':ratio>=warnRatio?'#FFD43B':'#fff'}"></div></div>
     </div>
 
     <div class="budget-stats">
       <div class="budget-stat"><div class="label">预算上限</div><div class="val">${fmt(budget)}</div></div>
-      <div class="budget-stat"><div class="label">已支出</div><div class="val" style="color:var(--red)">${fmt(expense)}</div></div>
-      <div class="budget-stat"><div class="label">剩余可用</div><div class="val" style="color:${remain<0?'var(--red)':'var(--green)'}">${fmt(remain)}</div></div>
+      <div class="budget-stat"><div class="label">已支出</div><div class="val" style="color:var(--green)">${fmt(expense)}</div></div>
+      <div class="budget-stat"><div class="label">剩余可用</div><div class="val" style="color:${remain<0?'var(--red)':'var(--cyan)'}">${fmt(remain)}</div></div>
       <div class="budget-stat"><div class="label">日均支出</div><div class="val">${fmt(dailyAvg)}</div></div>
       ${isCurrentMonth?`<div class="budget-stat"><div class="label">距月末</div><div class="val">${daysLeft} 天</div></div>`:''}
       ${isCurrentMonth&&daysLeft>0?`<div class="budget-stat"><div class="label">建议日预算</div><div class="val" style="color:var(--cyan)">${fmt(suggestDaily)}</div></div>`:''}
@@ -1453,7 +1453,7 @@ function renderBudget(){
       <div class="table-wrap"><table>
         <thead><tr><th>月份</th><th>预算</th><th>支出</th><th>剩余</th><th>执行率</th><th>状态</th></tr></thead>
         <tbody>
-          ${(()=>{ const rows=[]; for(let i=5;i>=0;i--){ const m=shiftMonthStr(currentMonth,-i); const b=getBudget(m); const e=getMonthExpense(m); const r=b-e; const rr=b>0?e/b*100:0; let st; if(rr>=100)st='<span style="color:var(--red)">超支</span>'; else if(rr>=warnRatio)st='<span style="color:var(--yellow)">警戒</span>'; else st='<span style="color:var(--green)">健康</span>'; rows.push(`<tr><td>${monthLabel(m)}</td><td>${fmt(b)}</td><td style="color:var(--red)">${fmt(e)}</td><td style="color:${r<0?'var(--red)':'var(--green)'}">${fmt(r)}</td><td>${rr.toFixed(1)}%</td><td>${st}</td></tr>`); } return rows.join(''); })()}
+          ${(()=>{ const rows=[]; for(let i=5;i>=0;i--){ const m=shiftMonthStr(currentMonth,-i); const b=getBudget(m); const e=getMonthExpense(m); const r=b-e; const rr=b>0?e/b*100:0; let st; if(rr>=100)st='<span style="color:var(--red)">超支</span>'; else if(rr>=warnRatio)st='<span style="color:var(--yellow)">警戒</span>'; else st='<span style="color:var(--green)">健康</span>'; rows.push(`<tr><td>${monthLabel(m)}</td><td>${fmt(b)}</td><td style="color:var(--green)">${fmt(e)}</td><td style="color:${r<0?'var(--red)':'var(--cyan)'}">${fmt(r)}</td><td>${rr.toFixed(1)}%</td><td>${st}</td></tr>`); } return rows.join(''); })()}
         </tbody>
       </table></div>
     </div>
@@ -1613,7 +1613,7 @@ function renderGoalGrid(){
         <span class="horizon-tag h${g.horizon}">${g.horizon}年目标</span>
       </div>
       <div class="goal-meta">
-        <span>已存 <span class="saved" style="${saved<0?'color:var(--red)':''}">${fmtSignedNoPlus(saved)}</span></span>
+        <span>已存 <span class="saved" style="${saved<0?'color:var(--green)':''}">${fmtSignedNoPlus(saved)}</span></span>
         <span class="target">目标 ${fmt(g.targetAmount)}</span>
       </div>
       <div class="progress"><div class="progress-bar ${prog>=100?'':'warn'}" style="width:${Math.min(prog,100)}%"></div></div>
@@ -1797,7 +1797,7 @@ function renderCharts(){
     }
     chartInstances.balance=new Chart(bc,{
       type:'bar',
-      data:{ labels:bMonths, datasets:[{ label:'结余', data:balances, backgroundColor:balances.map(v=>v>=0?'rgba(82,196,26,.7)':'rgba(255,107,107,.7)') }] },
+      data:{ labels:bMonths, datasets:[{ label:'结余', data:balances, backgroundColor:balances.map(v=>v>=0?'rgba(244,63,94,.7)':'rgba(16,185,129,.7)') }] },
       options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
     });
   }
